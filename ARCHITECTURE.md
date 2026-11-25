@@ -51,8 +51,3 @@ n8n: overdue-reminders.json (Daily Cron) --HMAC GET--> /api/automation/overdue-l
 
 Any n8n failure ---> n8n: error-handler.json (sanitized) ---> ALERT_WEBHOOK_URL
 ```
-
-<!-- AUTO-KG-STATS:START -->
-- **Knowledge Graph Live Sync:** `2026-11-25 16:05 UTC` | Nodes: **63** | Edges: **47** | Layers: **5** | Languages: `javascript, markdown, typescript`
-- **Top Connected Hubs:** `convex/auth.config.ts` (1), `convex/automation.ts` (1), `convex/http.ts` (1), `convex/loans.ts` (1), `convex/schema.ts` (1)
-<!-- AUTO-KG-STATS:END -->

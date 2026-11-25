@@ -1,0 +1,297 @@
+{
+  "APPLY_EMAIL_DRAFT.md": {
+    "size": 4878,
+    "mtime_ns": 1795601307137153400,
+    "hash": "e7be057a6fcfae7a"
+  },
+  "ARCHITECTURE.md": {
+    "size": 4612,
+    "mtime_ns": 1795622678439157400,
+    "hash": "19f570a3065a9b26"
+  },
+  "README.md": {
+    "size": 14851,
+    "mtime_ns": 1795601264988576700,
+    "hash": "6a55f2075df26f61"
+  },
+  "convex.json": {
+    "size": 29,
+    "mtime_ns": 1795595986896262600,
+    "hash": "1bb7e2dec7148da5"
+  },
+  "docker-compose.yml": {
+    "size": 1454,
+    "mtime_ns": 1795595994279213000,
+    "hash": "62be2d6287163c0a"
+  },
+  "next-env.d.ts": {
+    "size": 268,
+    "mtime_ns": 1795602008444898400,
+    "hash": "f4e8976c19fc9266"
+  },
+  "next.config.ts": {
+    "size": 596,
+    "mtime_ns": 1795595981488322000,
+    "hash": "855cae11560e7aea"
+  },
+  "package-lock.json": {
+    "size": 93623,
+    "mtime_ns": 1795602169149324100,
+    "hash": "321d60d9067a3e2f"
+  },
+  "package.json": {
+    "size": 808,
+    "mtime_ns": 1795595976426464200,
+    "hash": "f6b2468e8a8f76de"
+  },
+  "pnpm-lock.yaml": {
+    "size": 66512,
+    "mtime_ns": 1795601830062619100,
+    "hash": "024cb4f21f1862a5"
+  },
+  "tsconfig.json": {
+    "size": 657,
+    "mtime_ns": 1795595978296771400,
+    "hash": "dfd31fa74852b6f5"
+  },
+  "vitest.config.ts": {
+    "size": 345,
+    "mtime_ns": 1795595983992764700,
+    "hash": "326524b5ec8ebec1"
+  },
+  "convex/auth.config.ts": {
+    "size": 141,
+    "mtime_ns": 1795596175270538700,
+    "hash": "cb0055e560aedfd4"
+  },
+  "convex/automation.ts": {
+    "size": 3395,
+    "mtime_ns": 1795600788344820100,
+    "hash": "b332db86ec3d0915"
+  },
+  "convex/http.ts": {
+    "size": 5183,
+    "mtime_ns": 1795600844323471100,
+    "hash": "4cdf55b8b2e40908"
+  },
+  "convex/loans.ts": {
+    "size": 14822,
+    "mtime_ns": 1795600980649334500,
+    "hash": "f48c4c5976eb129c"
+  },
+  "convex/schema.ts": {
+    "size": 2332,
+    "mtime_ns": 1795596193134410600,
+    "hash": "ce9aacd621d1a5cd"
+  },
+  "convex/security.ts": {
+    "size": 5667,
+    "mtime_ns": 1795596307223791400,
+    "hash": "5278922eb7cb6676"
+  },
+  "convex/tools.ts": {
+    "size": 8044,
+    "mtime_ns": 1795600875847584600,
+    "hash": "e2d9174d5bb3c044"
+  },
+  "convex/users.ts": {
+    "size": 3129,
+    "mtime_ns": 1795596395320712800,
+    "hash": "cc5d2229c92fcb6c"
+  },
+  "convex/_generated/api.d.ts": {
+    "size": 901,
+    "mtime_ns": 1795596264598718700,
+    "hash": "738e4e0babff4363"
+  },
+  "convex/_generated/api.js": {
+    "size": 121,
+    "mtime_ns": 1795596276391101400,
+    "hash": "06fd3926de24efc5"
+  },
+  "convex/_generated/dataModel.d.ts": {
+    "size": 748,
+    "mtime_ns": 1795596214874008200,
+    "hash": "d32973b753219521"
+  },
+  "convex/_generated/server.d.ts": {
+    "size": 1179,
+    "mtime_ns": 1795596236761132300,
+    "hash": "bcad71afdffc389f"
+  },
+  "convex/_generated/server.js": {
+    "size": 523,
+    "mtime_ns": 1795596257008759100,
+    "hash": "7b1cf754b058bd68"
+  },
+  "n8n/workflows/error-handler.json": {
+    "size": 3234,
+    "mtime_ns": 1795596600579747800,
+    "hash": "08cbfdf3514499eb"
+  },
+  "n8n/workflows/overdue-reminders.json": {
+    "size": 8249,
+    "mtime_ns": 1795596614497160100,
+    "hash": "ef55b8cde9af4ee4"
+  },
+  "n8n/workflows/request-notification.json": {
+    "size": 14321,
+    "mtime_ns": 1795601094051208300,
+    "hash": "59030e1c81ad4f2c"
+  },
+  "src/middleware.ts": {
+    "size": 1168,
+    "mtime_ns": 1795596655028624900,
+    "hash": "6e1e24f32f991ccc"
+  },
+  "src/app/layout.tsx": {
+    "size": 826,
+    "mtime_ns": 1795599749593837900,
+    "hash": "8331f85adb826b20"
+  },
+  "src/app/page.tsx": {
+    "size": 267,
+    "mtime_ns": 1795599753583062900,
+    "hash": "2f4501bc42c0cc8b"
+  },
+  "src/app/api/automation/notification-logged/route.ts": {
+    "size": 2006,
+    "mtime_ns": 1795601043029640900,
+    "hash": "f88254a1da4c48db"
+  },
+  "src/app/api/automation/overdue-loans/route.ts": {
+    "size": 1195,
+    "mtime_ns": 1795599646790713000,
+    "hash": "887141c6b7437161"
+  },
+  "src/app/api/automation/reminder-logged/route.ts": {
+    "size": 1966,
+    "mtime_ns": 1795601023296098200,
+    "hash": "f14a331a673f3c3d"
+  },
+  "src/app/api/demo/loans/route.ts": {
+    "size": 602,
+    "mtime_ns": 1795599670151198300,
+    "hash": "547d6c576b7cff00"
+  },
+  "src/app/api/demo/public-tools/route.ts": {
+    "size": 423,
+    "mtime_ns": 1795599656989157100,
+    "hash": "3e8391c8faf9525b"
+  },
+  "src/app/api/demo/simulate-overdue-automation/route.ts": {
+    "size": 3304,
+    "mtime_ns": 1795599679943197000,
+    "hash": "181f4670139399fd"
+  },
+  "src/app/api/demo/state/route.ts": {
+    "size": 1458,
+    "mtime_ns": 1795599660409443300,
+    "hash": "aea23acd1c6e721d"
+  },
+  "src/app/api/demo/tools/route.ts": {
+    "size": 556,
+    "mtime_ns": 1795599663965032300,
+    "hash": "9edd8f97bf5d7591"
+  },
+  "src/components/ActivityFeed.tsx": {
+    "size": 1585,
+    "mtime_ns": 1795599763485863400,
+    "hash": "5b83deaba312d34a"
+  },
+  "src/components/AuthenticatedWorkspace.tsx": {
+    "size": 37099,
+    "mtime_ns": 1795599868642189500,
+    "hash": "0c095c5d2d0b2110"
+  },
+  "src/components/CloudLendLoopApp.tsx": {
+    "size": 8414,
+    "mtime_ns": 1795601072086479200,
+    "hash": "12f12b413be7895e"
+  },
+  "src/components/DemoLendLoopApp.tsx": {
+    "size": 9894,
+    "mtime_ns": 1795601057050234600,
+    "hash": "c7bebe1fc49a44c3"
+  },
+  "src/components/LendLoopShell.tsx": {
+    "size": 323,
+    "mtime_ns": 1795599882794750900,
+    "hash": "e8fecbd6eb8a018c"
+  },
+  "src/components/Providers.tsx": {
+    "size": 930,
+    "mtime_ns": 1795599760141444300,
+    "hash": "4ba46b38237190ff"
+  },
+  "src/components/PublicCatalog.tsx": {
+    "size": 3188,
+    "mtime_ns": 1795599766729169400,
+    "hash": "c427eb7dbf81c2de"
+  },
+  "src/lib/authz.ts": {
+    "size": 3612,
+    "mtime_ns": 1795596094556097800,
+    "hash": "44304804063d9e85"
+  },
+  "src/lib/demoAuth.ts": {
+    "size": 855,
+    "mtime_ns": 1795596639703397600,
+    "hash": "3c839eb77d350993"
+  },
+  "src/lib/demoStore.ts": {
+    "size": 23730,
+    "mtime_ns": 1795601011648233700,
+    "hash": "145c601ac1b4b58f"
+  },
+  "src/lib/domain.ts": {
+    "size": 6139,
+    "mtime_ns": 1795596088584318000,
+    "hash": "1b7135613d1daea6"
+  },
+  "src/lib/hmac.ts": {
+    "size": 5085,
+    "mtime_ns": 1795596101928222500,
+    "hash": "609f475fe80ccdb3"
+  },
+  "src/lib/runtimeConfig.ts": {
+    "size": 1017,
+    "mtime_ns": 1795596106842969900,
+    "hash": "34326e6e8775c604"
+  },
+  "src/lib/types.ts": {
+    "size": 2809,
+    "mtime_ns": 1795596082164690100,
+    "hash": "eae6751e99287755"
+  },
+  "tests/authz.test.ts": {
+    "size": 4783,
+    "mtime_ns": 1795599969709245600,
+    "hash": "6defeb737d52ebc8"
+  },
+  "tests/automation-routes.test.ts": {
+    "size": 6355,
+    "mtime_ns": 1795601201985570900,
+    "hash": "51e34f906df9362f"
+  },
+  "tests/demo-store-integration.test.ts": {
+    "size": 8488,
+    "mtime_ns": 1795601185879620500,
+    "hash": "d9b2b45711ccd775"
+  },
+  "tests/domain.test.ts": {
+    "size": 3521,
+    "mtime_ns": 1795599992629779400,
+    "hash": "387eb6f9d0e5bf97"
+  },
+  "tests/hmac.test.ts": {
+    "size": 4776,
+    "mtime_ns": 1795600016306746700,
+    "hash": "eee5d69b1a9a560f"
+  },
+  "tests/n8n-workflows.test.ts": {
+    "size": 4971,
+    "mtime_ns": 1795601169080590200,
+    "hash": "1e2e1abdaa3a58bf"
+  }
+}

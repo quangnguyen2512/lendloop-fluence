@@ -1,0 +1,242 @@
+{
+  "id": "lendloop-overdue-reminders",
+  "name": "LendLoop — Daily Overdue Loan Reminders",
+  "active": false,
+  "nodes": [
+    {
+      "id": "ovd-cron-1",
+      "name": "Daily 09:00 UTC Overdue Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ovd-sign-get-2",
+      "name": "Sign Overdue Query Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.LENDLOOP_HMAC_SECRET;\nif (!secret) {\n  throw new Error('LENDLOOP_HMAC_SECRET environment variable is not configured.');\n}\n\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst canonicalTarget = 'GET:/api/automation/overdue-loans';\nconst signature = 'v1=' + crypto\n  .createHmac('sha256', secret)\n  .update(`${timestamp}.${canonicalTarget}`)\n  .digest('hex');\n\nreturn [\n  {\n    json: {\n      timestamp,\n      signature,\n      todayUtc: new Date().toISOString().slice(0, 10),\n    },\n  },\n];"
+      }
+    },
+    {
+      "id": "ovd-fetch-3",
+      "name": "Fetch Overdue Loans from Convex",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2500,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.CONVEX_SITE_URL }}/api/automation/overdue-loans",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-LendLoop-Timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "X-LendLoop-Signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "ovd-expand-4",
+      "name": "Expand Overdue Loans & Build Idempotency Keys",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 300],
+      "parameters": {
+        "jsCode": "const response = $input.first().json || {};\nconst todayUtc = response.todayUtc || new Date().toISOString().slice(0, 10);\nconst loans = Array.isArray(response.loans) ? response.loans : [];\n\n// Return empty array when there are zero overdue loans so downstream stops cleanly\nreturn loans.map((loan) => ({\n  json: {\n    loanId: String(loan.loanId),\n    toolName: String(loan.toolName),\n    endDate: String(loan.endDate),\n    daysOverdue: Number(loan.daysOverdue || 1),\n    borrowerDisplayName: String(loan.borrowerDisplayName || 'Neighbor'),\n    lenderDisplayName: String(loan.lenderDisplayName || 'Neighbor'),\n    idempotencyKey: `overdue:${loan.loanId}:${todayUtc}`,\n    todayUtc,\n  },\n}));"
+      }
+    },
+    {
+      "id": "ovd-send-reminder-5",
+      "name": "Dispatch Borrower Reminder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 300],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFICATION_SINK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.idempotencyKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: 'lendloop_overdue_reminder', idempotencyKey: $json.idempotencyKey, loanId: $json.loanId, recipient: $json.borrowerDisplayName, message: `Friendly reminder: ${$json.toolName} from ${$json.lenderDisplayName} was due on ${$json.endDate} (${$json.daysOverdue}d overdue).` }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "ovd-sign-writeback-6",
+      "name": "Sign Reminder Write-back",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1460, 300],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.LENDLOOP_HMAC_SECRET;\nif (!secret) {\n  throw new Error('LENDLOOP_HMAC_SECRET environment variable is not configured.');\n}\n\nconst loans = $('Expand Overdue Loans & Build Idempotency Keys').all();\nconst results = [];\n\nfor (const item of loans) {\n  const loan = item.json;\n  const bodyObj = {\n    loanId: loan.loanId,\n    idempotencyKey: loan.idempotencyKey,\n    channel: 'n8n_overdue_workflow',\n    messageSummary: `Reminder sent (${loan.daysOverdue}d overdue)`,\n  };\n  const rawBody = JSON.stringify(bodyObj);\n  const timestamp = String(Math.floor(Date.now() / 1000));\n  const signature = 'v1=' + crypto\n    .createHmac('sha256', secret)\n    .update(`${timestamp}.${rawBody}`)\n    .digest('hex');\n\n  results.push({\n    json: {\n      rawBody,\n      timestamp,\n      signature,\n      idempotencyKey: loan.idempotencyKey,\n    },\n  });\n}\n\nreturn results;"
+      }
+    },
+    {
+      "id": "ovd-writeback-7",
+      "name": "Write Back Reminder Logged to Convex",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1720, 300],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONVEX_SITE_URL }}/api/automation/reminder-logged",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-LendLoop-Timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "X-LendLoop-Signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.rawBody }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 09:00 UTC Overdue Check": {
+      "main": [
+        [
+          {
+            "node": "Sign Overdue Query Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign Overdue Query Request": {
+      "main": [
+        [
+          {
+            "node": "Fetch Overdue Loans from Convex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Overdue Loans from Convex": {
+      "main": [
+        [
+          {
+            "node": "Expand Overdue Loans & Build Idempotency Keys",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Expand Overdue Loans & Build Idempotency Keys": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Borrower Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch Borrower Reminder": {
+      "main": [
+        [
+          {
+            "node": "Sign Reminder Write-back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign Reminder Write-back": {
+      "main": [
+        [
+          {
+            "node": "Write Back Reminder Logged to Convex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "lendloop-error-handler",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "versionId": "10000000-0000-4000-8000-000000000002",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    {
+      "name": "lendloop"
+    },
+    {
+      "name": "overdue-reminders"
+    }
+  ]
+}

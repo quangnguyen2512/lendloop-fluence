@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Testing & coverage
+coverage/
+*.tsbuildinfo
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Local n8n volumes
+n8n_data/
+
+# Local application drafts (keep private, do not push)
+APPLY_EMAIL_DRAFT.md
+*.db
+*.db-wal
+*.db-shm
+.pytest_cache/
+__pycache__/
+APPLY_*.md
+LOOM_SCRIPTS*.md
+SUBMISSION*.md

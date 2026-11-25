@@ -1,0 +1,100 @@
+{
+  "id": "lendloop-error-handler",
+  "name": "LendLoop — Automation Error Handler",
+  "active": false,
+  "nodes": [
+    {
+      "id": "err-trigger-1",
+      "name": "On Workflow Failure",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {}
+    },
+    {
+      "id": "err-sanitize-2",
+      "name": "Sanitize Error Telemetry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "parameters": {
+        "jsCode": "const input = $input.first().json || {};\nconst execution = input.execution || {};\nconst workflow = input.workflow || {};\nconst err = execution.error || {};\n\nfunction sanitize(value) {\n  return String(value || 'Unknown automation error')\n    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/gi, '[redacted-email]')\n    .replace(/Bearer\\s+[A-Za-z0-9._-]+/gi, 'Bearer [redacted]')\n    .replace(/v1=[0-9a-f]{32,128}/gi, 'v1=[redacted-sig]')\n    .replace(/\\b[0-9a-f]{32,}\\b/gi, '[redacted-secret]')\n    .slice(0, 400);\n}\n\nreturn [\n  {\n    json: {\n      service: 'lendloop-n8n',\n      severity: 'error',\n      workflowId: String(workflow.id || 'unknown'),\n      workflowName: String(workflow.name || 'unknown'),\n      executionId: String(execution.id || 'unknown'),\n      lastNodeExecuted: String(execution.lastNodeExecuted || 'unknown'),\n      errorName: String(err.name || 'WorkflowError'),\n      errorMessage: sanitize(err.message || err.description),\n      occurredAt: new Date().toISOString(),\n    },\n  },\n];"
+      }
+    },
+    {
+      "id": "err-alert-3",
+      "name": "Send Ops Failure Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [780, 300],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ALERT_WEBHOOK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-LendLoop-Alert",
+              "value": "automation-error"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "On Workflow Failure": {
+      "main": [
+        [
+          {
+            "node": "Sanitize Error Telemetry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sanitize Error Telemetry": {
+      "main": [
+        [
+          {
+            "node": "Send Ops Failure Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "versionId": "10000000-0000-4000-8000-000000000003",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    {
+      "name": "lendloop"
+    },
+    {
+      "name": "error-handling"
+    }
+  ]
+}

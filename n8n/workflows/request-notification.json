@@ -1,0 +1,376 @@
+{
+  "id": "lendloop-request-notification",
+  "name": "LendLoop — Borrow Request & Status Change Notification",
+  "active": false,
+  "nodes": [
+    {
+      "id": "req-webhook-1",
+      "name": "Borrow Loan Event Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "lendloop-loan-events",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lendloop-loan-events",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "req-verify-hmac-2",
+      "name": "Verify HMAC-SHA256 & Replay Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst secret = $env.LENDLOOP_HMAC_SECRET;\n\nfunction getHeader(name) {\n  const lower = name.toLowerCase();\n  for (const [k, v] of Object.entries(headers)) {\n    if (k.toLowerCase() === lower) return String(v || '');\n  }\n  return '';\n}\n\nif (!secret) {\n  throw new Error('LENDLOOP_HMAC_SECRET environment variable is not configured.');\n}\n\nconst sigHeader = getHeader('x-lendloop-signature').trim();\nconst tsHeader = getHeader('x-lendloop-timestamp').trim();\n\nlet rawBody = '';\nif (item.binary && item.binary.data && item.binary.data.data) {\n  rawBody = Buffer.from(item.binary.data.data, 'base64').toString('utf8');\n} else if (typeof item.json.rawBody === 'string') {\n  rawBody = item.json.rawBody;\n} else {\n  rawBody = JSON.stringify(item.json.body || {});\n}\n\nconst nowSec = Math.floor(Date.now() / 1000);\nconst tsSec = Number(tsHeader);\nconst withinWindow = /^\\d+$/.test(tsHeader) && Math.abs(nowSec - tsSec) <= 300;\n\nlet verified = false;\nlet reason = 'ok';\n\nif (!sigHeader || !tsHeader) {\n  reason = 'missing_headers';\n} else if (!withinWindow) {\n  reason = 'timestamp_out_of_window';\n} else if (!sigHeader.startsWith('v1=')) {\n  reason = 'invalid_signature_format';\n} else {\n  const providedHex = sigHeader.slice(3).toLowerCase();\n  const expectedHex = crypto\n    .createHmac('sha256', secret)\n    .update(`${tsHeader}.${rawBody}`)\n    .digest('hex');\n  if (/^[0-9a-f]{64}$/.test(providedHex)) {\n    const a = Buffer.from(expectedHex, 'hex');\n    const b = Buffer.from(providedHex, 'hex');\n    verified = a.length === b.length && crypto.timingSafeEqual(a, b);\n    if (!verified) reason = 'signature_mismatch';\n  } else {\n    reason = 'malformed_digest';\n  }\n}\n\nlet payload = {};\nif (verified) {\n  payload = typeof item.json.body === 'object' && item.json.body !== null\n    ? item.json.body\n    : JSON.parse(rawBody);\n}\n\nreturn [\n  {\n    json: {\n      verified,\n      reason,\n      payload,\n    },\n  },\n];"
+      }
+    },
+    {
+      "id": "req-if-valid-3",
+      "name": "Is Signature Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [700, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-verified",
+              "leftValue": "={{ $json.verified }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "req-reject-401",
+      "name": "Respond 401 Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [960, 460],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: 'Unauthorized webhook signature' }) }}",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "req-minimize-4",
+      "name": "Extract Minimal Notification Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 200],
+      "parameters": {
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fld-event",
+              "name": "event",
+              "value": "={{ $json.payload.event }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-eventId",
+              "name": "eventId",
+              "value": "={{ $json.payload.eventId }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-status",
+              "name": "status",
+              "value": "={{ $json.payload.status }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-loanId",
+              "name": "loanId",
+              "value": "={{ $json.payload.loanId }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-toolName",
+              "name": "toolName",
+              "value": "={{ $json.payload.toolName }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-toolCategory",
+              "name": "toolCategory",
+              "value": "={{ $json.payload.toolCategory }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-startDate",
+              "name": "startDate",
+              "value": "={{ $json.payload.startDate }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-endDate",
+              "name": "endDate",
+              "value": "={{ $json.payload.endDate }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-recipientRole",
+              "name": "recipientRole",
+              "value": "={{ $json.payload.recipientRole }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-recipientFirstName",
+              "name": "recipientFirstName",
+              "value": "={{ $json.payload.recipientFirstName }}",
+              "type": "string"
+            },
+            {
+              "id": "fld-actorFirstName",
+              "name": "actorFirstName",
+              "value": "={{ $json.payload.actorFirstName }}",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "req-compose-5",
+      "name": "Compose Minimal Recipient Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1220, 200],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst event = String(data.event || 'loan.requested');\nconst actor = String(data.actorFirstName || 'A neighbor');\nconst recipient = String(data.recipientFirstName || 'Neighbor');\nconst tool = String(data.toolName || 'a tool');\nconst range = `${data.startDate} to ${data.endDate}`;\n\nconst templates = {\n  'loan.requested': {\n    headline: `${actor} requested ${tool} (${range})`,\n    summary: `Request notification delivered to ${recipient}`,\n  },\n  'loan.approved': {\n    headline: `${actor} approved your request for ${tool} (${range})`,\n    summary: `Approval notification delivered to ${recipient}`,\n  },\n  'loan.declined': {\n    headline: `${actor} declined your request for ${tool} (${range})`,\n    summary: `Decline notification delivered to ${recipient}`,\n  },\n  'loan.returned': {\n    headline: `${actor} marked ${tool} as returned — thanks for sharing!`,\n    summary: `Return confirmation delivered to ${recipient}`,\n  },\n  'loan.cancelled': {\n    headline: `${actor} cancelled their borrow request for ${tool} (${range})`,\n    summary: `Cancellation notice delivered to ${recipient}`,\n  },\n};\n\nconst chosen = templates[event] || templates['loan.requested'];\nconst eventSuffix = event.startsWith('loan.') ? event.slice(5) : 'requested';\nconst idempotencyKey = String(data.eventId || `notify:${data.loanId}:${eventSuffix}`);\n\nreturn [\n  {\n    json: {\n      event,\n      status: String(data.status || 'pending'),\n      loanId: String(data.loanId),\n      idempotencyKey,\n      recipientRole: String(data.recipientRole || 'lender'),\n      recipient,\n      headline: chosen.headline,\n      summary: chosen.summary,\n      dates: range,\n    },\n  },\n];"
+      }
+    },
+    {
+      "id": "req-deliver-6",
+      "name": "Deliver User Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1480, 200],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.NOTIFICATION_SINK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.idempotencyKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: 'lendloop_loan_event', event: $json.event, status: $json.status, loanId: $json.loanId, recipientRole: $json.recipientRole, recipient: $json.recipient, headline: $json.headline, dates: $json.dates }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "req-sign-writeback-7",
+      "name": "Sign Convex Activity Write-back",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 200],
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst composed = $('Compose Minimal Recipient Message').first().json;\nconst secret = $env.LENDLOOP_HMAC_SECRET;\nif (!secret) {\n  throw new Error('LENDLOOP_HMAC_SECRET environment variable is not configured.');\n}\n\nconst writebackPayload = {\n  loanId: composed.loanId,\n  idempotencyKey: composed.idempotencyKey,\n  channel: 'n8n_request_workflow',\n  messageSummary: composed.summary,\n};\nconst rawBody = JSON.stringify(writebackPayload);\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst sig = 'v1=' + crypto.createHmac('sha256', secret).update(`${timestamp}.${rawBody}`).digest('hex');\n\nreturn [\n  {\n    json: {\n      rawBody,\n      timestamp,\n      signature: sig,\n      loanId: composed.loanId,\n      event: composed.event,\n    },\n  },\n];"
+      }
+    },
+    {
+      "id": "req-writeback-8",
+      "name": "Record Notification in Convex",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 200],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONVEX_SITE_URL }}/api/automation/notification-logged",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-LendLoop-Timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "name": "X-LendLoop-Signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.rawBody }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "req-respond-200",
+      "name": "Respond 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2260, 200],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, status: 'notification_delivered' }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Borrow Loan Event Webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify HMAC-SHA256 & Replay Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify HMAC-SHA256 & Replay Window": {
+      "main": [
+        [
+          {
+            "node": "Is Signature Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Signature Valid?": {
+      "main": [
+        [
+          {
+            "node": "Extract Minimal Notification Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401 Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Minimal Notification Fields": {
+      "main": [
+        [
+          {
+            "node": "Compose Minimal Recipient Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose Minimal Recipient Message": {
+      "main": [
+        [
+          {
+            "node": "Deliver User Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver User Notification": {
+      "main": [
+        [
+          {
+            "node": "Sign Convex Activity Write-back",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sign Convex Activity Write-back": {
+      "main": [
+        [
+          {
+            "node": "Record Notification in Convex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Notification in Convex": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "lendloop-error-handler",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "versionId": "10000000-0000-4000-8000-000000000001",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    {
+      "name": "lendloop"
+    },
+    {
+      "name": "notifications"
+    }
+  ]
+}
